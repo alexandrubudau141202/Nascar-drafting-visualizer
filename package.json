@@ -1,0 +1,14 @@
+{
+    "name": "nascar-drafting-visualizer",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "dependencies": {
+        "three": "^0.183.2",
+        "vite": "^8.0.1"
+    }
+}

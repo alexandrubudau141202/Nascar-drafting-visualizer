@@ -1,0 +1,591 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   NASCAR DRAFTING VISUALIZER — UI Redesign
+   Vibe: Broadcast TV overlay × Racing Game HUD × Retro NASCAR Americana
+   Fonts: Barlow Condensed (display / bold) + Share Tech Mono (data readouts)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Share+Tech+Mono&display=swap');
+
+   /* ── Tokens ─────────────────────────────────────────────────────────────── */
+   :root {
+     --nascar-red:     #E31837;
+     --nascar-red-dim: rgba(227,24,55,0.18);
+     --nascar-red-glow:rgba(227,24,55,0.45);
+     --yellow:         #FFD000;
+     --yellow-dim:     rgba(255,208,0,0.15);
+     --cyan:           #00e5ff;
+     --cyan-dim:       rgba(0,229,255,0.15);
+     --white:          #f0f4f8;
+     --dim:            #4a5a6a;
+     --bg:             #060810;
+     --panel:          rgba(6,8,14,0.92);
+     --border:         rgba(255,255,255,0.07);
+     --border-hot:     rgba(227,24,55,0.6);
+     --mono:           'Share Tech Mono', monospace;
+     --display:        'Barlow Condensed', sans-serif;
+     --r:              3px;
+   }
+   
+   /* ── Reset ──────────────────────────────────────────────────────────────── */
+   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+   
+   html, body {
+     width: 100%; height: 100%;
+     overflow: hidden;
+     background: var(--bg);
+     color: var(--white);
+     font-family: var(--display);
+   }
+   
+   canvas {
+     display: block;
+     position: fixed;
+     inset: 0;
+     z-index: 0;
+   }
+   
+   /* ══════════════════════════════════════════════════════════════════════════
+      SCANLINES — full-screen CRT feel
+      ══════════════════════════════════════════════════════════════════════════ */
+   #scanlines {
+     position: fixed;
+     inset: 0;
+     z-index: 1;
+     pointer-events: none;
+     background: repeating-linear-gradient(
+       to bottom,
+       transparent 0px,
+       transparent 3px,
+       rgba(0,0,0,0.08) 3px,
+       rgba(0,0,0,0.08) 4px
+     );
+     animation: scanroll 12s linear infinite;
+   }
+   @keyframes scanroll {
+     from { background-position: 0 0; }
+     to   { background-position: 0 400px; }
+   }
+   
+   /* ══════════════════════════════════════════════════════════════════════════
+      WATERMARK — bottom right
+      ══════════════════════════════════════════════════════════════════════════ */
+   #watermark {
+     position: fixed;
+     bottom: 22px;
+     right: 22px;
+     z-index: 5;
+     pointer-events: none;
+     opacity: 0.18;
+     display: flex;
+     flex-direction: column;
+     align-items: flex-end;
+     gap: 2px;
+     animation: wm-flicker 8s ease-in-out infinite;
+   }
+   #watermark svg { width: 180px; }
+   .watermark-sub {
+     font-family: var(--display);
+     font-weight: 700;
+     font-style: italic;
+     font-size: 9px;
+     letter-spacing: 0.35em;
+     color: #ffffff;
+     text-align: right;
+     padding-right: 2px;
+   }
+   @keyframes wm-flicker {
+     0%,100% { opacity: 0.18; }
+     48%     { opacity: 0.18; }
+     50%     { opacity: 0.10; }
+     52%     { opacity: 0.18; }
+     80%     { opacity: 0.18; }
+     81%     { opacity: 0.08; }
+     82%     { opacity: 0.18; }
+   }
+   
+   /* ══════════════════════════════════════════════════════════════════════════
+      TOP BAR — broadcast lower-third style
+      ══════════════════════════════════════════════════════════════════════════ */
+   #top-bar {
+     position: fixed;
+     top: 0; left: 0; right: 0;
+     z-index: 20;
+     height: 52px;
+     display: flex;
+     align-items: center;
+     gap: 0;
+     background: linear-gradient(
+       to bottom,
+       rgba(6,8,14,0.98) 0%,
+       rgba(6,8,14,0.85) 70%,
+       transparent 100%
+     );
+     border-bottom: 1px solid var(--border);
+     padding: 0;
+     overflow: hidden;
+   }
+   
+   /* Red flag stripe left edge */
+   #top-bar::before {
+     content: '';
+     display: block;
+     width: 4px;
+     height: 100%;
+     background: var(--nascar-red);
+     box-shadow: 0 0 16px var(--nascar-red-glow);
+     flex-shrink: 0;
+   }
+   
+   #nascar-logo {
+     width: 52px;
+     height: 52px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     flex-shrink: 0;
+     padding: 6px 4px 6px 10px;
+     filter: drop-shadow(0 0 8px var(--nascar-red-glow));
+     animation: logo-pulse 4s ease-in-out infinite;
+   }
+   #nascar-logo svg { width: 36px; height: 36px; }
+   @keyframes logo-pulse {
+     0%,100% { filter: drop-shadow(0 0 8px var(--nascar-red-glow)); }
+     50%     { filter: drop-shadow(0 0 18px var(--nascar-red-glow)) drop-shadow(0 0 4px #fff4); }
+   }
+   
+   .top-bar-title {
+     display: flex;
+     flex-direction: column;
+     padding: 0 14px 0 8px;
+     border-right: 1px solid var(--border);
+     line-height: 1;
+     gap: 1px;
+   }
+   .title-main {
+     font-weight: 900;
+     font-style: italic;
+     font-size: 20px;
+     letter-spacing: 0.08em;
+     color: var(--white);
+     text-transform: uppercase;
+   }
+   .title-sub {
+     font-weight: 700;
+     font-size: 9px;
+     letter-spacing: 0.35em;
+     color: var(--nascar-red);
+     text-transform: uppercase;
+   }
+   
+   .top-bar-divider {
+     flex: 1;
+   }
+   
+   .top-bar-status {
+     display: flex;
+     align-items: center;
+     gap: 6px;
+     padding: 0 18px;
+     border-left: 1px solid var(--border);
+     border-right: 1px solid var(--border);
+   }
+   .status-dot {
+     width: 7px; height: 7px;
+     background: var(--nascar-red);
+     border-radius: 50%;
+     box-shadow: 0 0 8px var(--nascar-red);
+     animation: blink 1.2s ease-in-out infinite;
+   }
+   @keyframes blink {
+     0%,100% { opacity: 1; }
+     50%     { opacity: 0.2; }
+   }
+   .status-label {
+     font-weight: 800;
+     font-size: 11px;
+     letter-spacing: 0.25em;
+     color: var(--nascar-red);
+   }
+   
+   .top-bar-right {
+     display: flex;
+     align-items: center;
+     gap: 6px;
+     padding: 0 16px;
+   }
+   .hint-text {
+     font-family: var(--mono);
+     font-size: 9px;
+     letter-spacing: 0.06em;
+     color: var(--dim);
+     text-transform: uppercase;
+   }
+   .hint-sep { color: var(--dim); font-size: 9px; }
+   
+   /* ══════════════════════════════════════════════════════════════════════════
+      PANEL SHARED STYLES
+      ══════════════════════════════════════════════════════════════════════════ */
+   .h-rule {
+     height: 1px;
+     background: linear-gradient(to right, transparent, var(--border), transparent);
+     margin: 2px 0;
+   }
+   
+   .panel-scanlines {
+     position: absolute;
+     inset: 0;
+     pointer-events: none;
+     border-radius: inherit;
+     background: repeating-linear-gradient(
+       to bottom,
+       transparent 0px,
+       transparent 2px,
+       rgba(0,0,0,0.06) 2px,
+       rgba(0,0,0,0.06) 3px
+     );
+     z-index: 0;
+   }
+   
+   /* All panel children sit above scanlines */
+   #dashboard > *:not(.panel-scanlines),
+   #controls  > *:not(.panel-scanlines) { position: relative; z-index: 1; }
+   
+   /* ══════════════════════════════════════════════════════════════════════════
+      DASHBOARD — right side telemetry
+      ══════════════════════════════════════════════════════════════════════════ */
+   #dashboard {
+     position: fixed;
+     top: 62px;
+     right: 16px;
+     z-index: 10;
+     width: 248px;
+     background: var(--panel);
+     backdrop-filter: blur(16px) saturate(1.6);
+     -webkit-backdrop-filter: blur(16px) saturate(1.6);
+     border: 1px solid var(--border);
+     border-top: 2px solid var(--nascar-red);
+     border-radius: var(--r);
+     box-shadow: 0 0 0 1px rgba(227,24,55,0.12), 0 8px 40px rgba(0,0,0,0.7);
+     padding: 14px 16px 16px;
+     display: flex;
+     flex-direction: column;
+     gap: 10px;
+     overflow: hidden;
+     animation: dash-flicker 14s ease-in-out infinite;
+   }
+   @keyframes dash-flicker {
+     0%,100% { opacity: 1; }
+     30%     { opacity: 1; }
+     31%     { opacity: 0.92; }
+     32%     { opacity: 1; }
+     70%     { opacity: 1; }
+     70.5%   { opacity: 0.85; }
+     71%     { opacity: 1; }
+   }
+   
+   /* Panel header */
+   .panel-header {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+   }
+   .panel-header-left { display: flex; align-items: baseline; gap: 6px; }
+   .panel-tag {
+     font-weight: 900;
+     font-style: italic;
+     font-size: 11px;
+     letter-spacing: 0.2em;
+     color: var(--nascar-red);
+     border: 1px solid var(--nascar-red);
+     padding: 1px 5px;
+     border-radius: 2px;
+   }
+   .panel-title {
+     font-weight: 800;
+     font-size: 13px;
+     letter-spacing: 0.2em;
+     color: var(--dim);
+   }
+   .panel-header-right { display: flex; align-items: center; gap: 5px; }
+   .rec-dot {
+     width: 6px; height: 6px;
+     background: var(--nascar-red);
+     border-radius: 50%;
+     box-shadow: 0 0 6px var(--nascar-red);
+     animation: blink 1.2s ease-in-out infinite;
+   }
+   .rec-label {
+     font-family: var(--mono);
+     font-size: 9px;
+     color: var(--nascar-red);
+     letter-spacing: 0.1em;
+   }
+   
+   /* Zone block */
+   .zone-block { display: flex; flex-direction: column; gap: 3px; }
+   .zone-label {
+     font-size: 9px;
+     font-weight: 700;
+     letter-spacing: 0.22em;
+     color: var(--dim);
+   }
+   .zone-value {
+     font-weight: 900;
+     font-style: italic;
+     font-size: 26px;
+     letter-spacing: 0.05em;
+     color: var(--cyan);
+     text-shadow: 0 0 20px var(--cyan);
+     transition: color 0.3s, text-shadow 0.3s;
+     animation: val-flicker 7s ease-in-out infinite;
+   }
+   @keyframes val-flicker {
+     0%,100% { opacity: 1; }
+     60%     { opacity: 1; }
+     61%     { opacity: 0.7; }
+     62%     { opacity: 1; }
+   }
+   
+   /* 2×2 metrics grid */
+   .metrics-grid {
+     display: grid;
+     grid-template-columns: 1fr 1fr;
+     gap: 10px 8px;
+   }
+   .metric-cell { display: flex; flex-direction: column; gap: 3px; }
+   .metric-label {
+     font-size: 8px;
+     font-weight: 700;
+     letter-spacing: 0.18em;
+     color: var(--dim);
+     text-transform: uppercase;
+   }
+   .metric-readout { display: flex; align-items: baseline; gap: 3px; }
+   .metric-num {
+     font-family: var(--mono);
+     font-size: 22px;
+     color: var(--yellow);
+     text-shadow: 0 0 12px rgba(255,208,0,0.5);
+     line-height: 1;
+     animation: num-flicker 9s ease-in-out infinite;
+   }
+   @keyframes num-flicker {
+     0%,100%  { opacity: 1; }
+     45%      { opacity: 1; }
+     45.3%    { opacity: 0.6; }
+     45.6%    { opacity: 1; }
+   }
+   .metric-unit {
+     font-family: var(--mono);
+     font-size: 9px;
+     color: var(--dim);
+   }
+   
+   /* Quality bar */
+   .quality-block { display: flex; flex-direction: column; gap: 6px; }
+   .quality-row { display: flex; justify-content: space-between; align-items: baseline; }
+   .quality-num {
+     font-family: var(--mono);
+     font-size: 18px;
+     color: var(--cyan);
+     text-shadow: 0 0 10px var(--cyan);
+   }
+   .quality-track {
+     height: 6px;
+     background: rgba(255,255,255,0.06);
+     border-radius: 1px;
+     overflow: hidden;
+     border: 1px solid var(--border);
+   }
+   .quality-fill {
+     height: 100%;
+     width: 0%;
+     border-radius: 1px;
+     transition: width 0.2s ease, background 0.2s ease;
+     box-shadow: 0 0 8px currentColor;
+   }
+   .quality-ticks {
+     display: flex;
+     justify-content: space-between;
+     font-family: var(--mono);
+     font-size: 7px;
+     color: var(--dim);
+     opacity: 0.5;
+   }
+   
+   /* Gap readout */
+   .gap-block { display: flex; justify-content: space-between; align-items: baseline; }
+   .gap-readout { display: flex; align-items: baseline; gap: 4px; }
+   .gap-num {
+     font-family: var(--mono);
+     font-size: 36px;
+     font-weight: 400;
+     color: #ffffff;
+     line-height: 1;
+     text-shadow: 0 0 24px rgba(255,255,255,0.3);
+     letter-spacing: -0.02em;
+   }
+   .gap-unit {
+     font-family: var(--mono);
+     font-size: 13px;
+     color: var(--dim);
+   }
+   
+   /* ══════════════════════════════════════════════════════════════════════════
+      CONTROLS — bottom left
+      ══════════════════════════════════════════════════════════════════════════ */
+   #controls {
+     position: fixed;
+     bottom: 20px;
+     left: 16px;
+     z-index: 10;
+     width: 290px;
+     background: var(--panel);
+     backdrop-filter: blur(16px) saturate(1.6);
+     -webkit-backdrop-filter: blur(16px) saturate(1.6);
+     border: 1px solid var(--border);
+     border-bottom: 2px solid var(--nascar-red);
+     border-radius: var(--r);
+     box-shadow: 0 0 0 1px rgba(227,24,55,0.12), 0 8px 40px rgba(0,0,0,0.7);
+     padding: 14px 16px 16px;
+     display: flex;
+     flex-direction: column;
+     gap: 12px;
+     overflow: hidden;
+   }
+   
+   .ctrl-header {
+     display: flex;
+     align-items: center;
+     gap: 7px;
+   }
+   .ctrl-header-tag {
+     font-weight: 900;
+     font-style: italic;
+     font-size: 10px;
+     letter-spacing: 0.2em;
+     color: var(--nascar-red);
+     border: 1px solid var(--nascar-red);
+     padding: 1px 5px;
+     border-radius: 2px;
+   }
+   .ctrl-header-title {
+     font-weight: 800;
+     font-size: 13px;
+     letter-spacing: 0.2em;
+     color: var(--dim);
+     flex: 1;
+   }
+   .ctrl-live-dot {
+     width: 6px; height: 6px;
+     background: var(--nascar-red);
+     border-radius: 50%;
+     box-shadow: 0 0 8px var(--nascar-red);
+     animation: blink 1.8s ease-in-out infinite;
+   }
+   
+   /* Slider groups */
+   .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+   .ctrl-row-label { display: flex; justify-content: space-between; align-items: baseline; }
+   .ctrl-lbl {
+     font-size: 9px;
+     font-weight: 700;
+     letter-spacing: 0.2em;
+     color: var(--dim);
+     text-transform: uppercase;
+   }
+   .ctrl-val {
+     font-family: var(--mono);
+     font-size: 14px;
+     color: var(--yellow);
+     text-shadow: 0 0 8px rgba(255,208,0,0.4);
+   }
+   
+   /* NASCAR-branded slider */
+   .nascar-slider {
+     -webkit-appearance: none;
+     appearance: none;
+     width: 100%;
+     height: 3px;
+     background: linear-gradient(to right, var(--nascar-red) 0%, var(--nascar-red) var(--val, 50%), rgba(255,255,255,0.1) var(--val, 50%));
+     border-radius: 2px;
+     outline: none;
+     cursor: pointer;
+   }
+   .nascar-slider::-webkit-slider-thumb {
+     -webkit-appearance: none;
+     width: 18px; height: 18px;
+     background: var(--white);
+     border: 3px solid var(--nascar-red);
+     border-radius: 50%;
+     box-shadow: 0 0 12px var(--nascar-red-glow), 0 0 4px rgba(0,0,0,0.8);
+     cursor: grab;
+     transition: transform 0.1s, box-shadow 0.1s;
+   }
+   .nascar-slider::-webkit-slider-thumb:active {
+     cursor: grabbing;
+     transform: scale(1.3);
+     box-shadow: 0 0 20px var(--nascar-red-glow);
+   }
+   .nascar-slider::-moz-range-thumb {
+     width: 18px; height: 18px;
+     background: var(--white);
+     border: 3px solid var(--nascar-red);
+     border-radius: 50%;
+     cursor: grab;
+   }
+   .slider-ends {
+     display: flex;
+     justify-content: space-between;
+     font-family: var(--mono);
+     font-size: 8px;
+     color: var(--dim);
+     opacity: 0.5;
+     margin-top: -2px;
+   }
+   
+   /* Toggle buttons */
+   .toggle-row {
+     display: flex;
+     gap: 6px;
+     flex-wrap: wrap;
+   }
+   .toggle-btn {
+     display: flex;
+     align-items: center;
+     gap: 5px;
+     background: rgba(255,255,255,0.03);
+     border: 1px solid var(--border);
+     border-radius: 2px;
+     padding: 5px 10px 5px 8px;
+     font-family: var(--display);
+     font-weight: 700;
+     font-size: 10px;
+     letter-spacing: 0.12em;
+     color: var(--dim);
+     cursor: pointer;
+     transition: all 0.15s;
+     text-transform: uppercase;
+   }
+   .tbtn-pip {
+     width: 5px; height: 5px;
+     border-radius: 50%;
+     background: var(--dim);
+     flex-shrink: 0;
+     transition: background 0.15s, box-shadow 0.15s;
+   }
+   .toggle-btn.active {
+     background: var(--nascar-red-dim);
+     border-color: var(--nascar-red);
+     color: #ff6680;
+     box-shadow: 0 0 10px rgba(227,24,55,0.15);
+   }
+   .toggle-btn.active .tbtn-pip {
+     background: var(--nascar-red);
+     box-shadow: 0 0 8px var(--nascar-red);
+   }
+   .toggle-btn:hover:not(.active) {
+     background: rgba(255,255,255,0.06);
+     border-color: rgba(255,255,255,0.15);
+     color: var(--white);
+   }

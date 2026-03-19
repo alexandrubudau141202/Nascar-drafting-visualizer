@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NASCAR Drafting Visualizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- ── Scanline overlay (full screen) ───────────────────────────────── -->
+  <div id="scanlines"></div>
+
+  <!-- ── NASCAR Wordmark Watermark (bottom-right) ─────────────────────── -->
+  <div id="watermark">
+    <svg viewBox="0 0 220 60" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="wm-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#E31837"/>
+          <stop offset="50%"  stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#E31837"/>
+        </linearGradient>
+      </defs>
+      <!-- Shield shape -->
+      <polygon points="4,4 46,4 46,44 25,56 4,44" fill="#E31837" stroke="#fff" stroke-width="1.5"/>
+      <polygon points="8,8 42,8 42,42 25,52 8,42" fill="none" stroke="#ffffff44" stroke-width="0.8"/>
+      <text x="25" y="36" text-anchor="middle" font-family="Barlow Condensed, sans-serif"
+            font-weight="900" font-style="italic" font-size="22" fill="white">N</text>
+      <!-- Wordmark -->
+      <text x="58" y="42" font-family="Barlow Condensed, sans-serif"
+            font-weight="900" font-style="italic" font-size="40"
+            fill="url(#wm-grad)" letter-spacing="2">NASCAR</text>
+    </svg>
+    <div class="watermark-sub">DRAFTING VISUALIZER</div>
+  </div>
+
+  <!-- ── Top Header Bar ───────────────────────────────────────────────── -->
+  <div id="top-bar">
+    <!-- NASCAR Logo left -->
+    <div id="nascar-logo">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="shield-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%"   stop-color="#ff2244"/>
+            <stop offset="100%" stop-color="#aa0011"/>
+          </linearGradient>
+        </defs>
+        <polygon points="6,4 58,4 58,46 32,60 6,46" fill="url(#shield-grad)"/>
+        <polygon points="10,8 54,8 54,44 32,56 10,44" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+        <!-- Chevron accent -->
+        <polyline points="10,28 32,38 54,28" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+        <text x="32" y="35" text-anchor="middle"
+              font-family="Barlow Condensed, sans-serif"
+              font-weight="900" font-style="italic"
+              font-size="22" fill="white" letter-spacing="0.5">NASCAR</text>
+      </svg>
+    </div>
+
+    <div class="top-bar-title">
+      <span class="title-main">DRAFTING</span>
+      <span class="title-sub">VISUALIZER</span>
+    </div>
+
+    <div class="top-bar-divider"></div>
+
+    <div class="top-bar-status">
+      <span class="status-dot"></span>
+      <span class="status-label">LIVE SIM</span>
+    </div>
+
+    <div class="top-bar-right">
+      <span class="hint-text">DRAG TO ORBIT</span>
+      <span class="hint-sep">·</span>
+      <span class="hint-text">SCROLL TO ZOOM</span>
+    </div>
+  </div>
+
+  <!-- ── Telemetry Dashboard (right) ──────────────────────────────────── -->
+  <div id="dashboard">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <span class="panel-tag">AERO</span>
+        <span class="panel-title">TELEMETRY</span>
+      </div>
+      <div class="panel-header-right">
+        <span class="rec-dot"></span>
+        <span class="rec-label">REC</span>
+      </div>
+    </div>
+
+    <!-- Zone -->
+    <div class="zone-block">
+      <div class="zone-label">DRAFTING ZONE</div>
+      <div class="zone-value" id="dash-zone">—</div>
+    </div>
+
+    <div class="h-rule"></div>
+
+    <!-- 2×2 metrics -->
+    <div class="metrics-grid">
+      <div class="metric-cell">
+        <div class="metric-label">DRAG REDUCTION</div>
+        <div class="metric-readout">
+          <span class="metric-num" id="dash-drag">—</span>
+          <span class="metric-unit">%</span>
+        </div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label">SPEED GAIN</div>
+        <div class="metric-readout">
+          <span class="metric-num" id="dash-speed">—</span>
+          <span class="metric-unit">km/h</span>
+        </div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label">TURBULENCE</div>
+        <div class="metric-readout">
+          <span class="metric-num" id="dash-turb">—</span>
+          <span class="metric-unit">%</span>
+        </div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label">PRESSURE Cp</div>
+        <div class="metric-readout">
+          <span class="metric-num" id="dash-cp">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="h-rule"></div>
+
+    <!-- Quality bar -->
+    <div class="quality-block">
+      <div class="quality-row">
+        <span class="metric-label">DRAFT QUALITY</span>
+        <span class="quality-num" id="dash-quality-score">—</span>
+      </div>
+      <div class="quality-track">
+        <div class="quality-fill" id="dash-quality-bar"></div>
+      </div>
+      <div class="quality-ticks">
+        <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+      </div>
+    </div>
+
+    <div class="h-rule"></div>
+
+    <!-- Gap readout -->
+    <div class="gap-block">
+      <span class="metric-label">BUMPER GAP</span>
+      <div class="gap-readout">
+        <span class="gap-num" id="dash-gap">—</span>
+        <span class="gap-unit">m</span>
+      </div>
+    </div>
+
+    <!-- Scanline overlay on panel -->
+    <div class="panel-scanlines"></div>
+  </div>
+
+  <!-- ── Controls Panel (bottom-left) ─────────────────────────────────── -->
+  <div id="controls">
+    <div class="ctrl-header">
+      <span class="ctrl-header-tag">SIM</span>
+      <span class="ctrl-header-title">CONTROLS</span>
+      <span class="ctrl-live-dot"></span>
+    </div>
+
+    <!-- Gap -->
+    <div class="ctrl-group">
+      <div class="ctrl-row-label">
+        <span class="ctrl-lbl">BUMPER GAP</span>
+        <span class="ctrl-val" id="distanceValue">10.0 m</span>
+      </div>
+      <input id="distanceSlider" class="nascar-slider" type="range" min="1" max="20" step="0.1" value="10"/>
+      <div class="slider-ends"><span>1 m</span><span>20 m</span></div>
+    </div>
+
+    <!-- Particle speed -->
+    <div class="ctrl-group">
+      <div class="ctrl-row-label">
+        <span class="ctrl-lbl">PARTICLE SPEED</span>
+        <span class="ctrl-val" id="particleSpeedValue">1.0×</span>
+      </div>
+      <input id="particleSpeedSlider" class="nascar-slider" type="range" min="0.1" max="4" step="0.1" value="1"/>
+      <div class="slider-ends"><span>0.1×</span><span>4×</span></div>
+    </div>
+
+    <div class="h-rule"></div>
+
+    <!-- Toggles -->
+    <div class="ctrl-lbl" style="margin-bottom:8px;">VISUALIZATIONS</div>
+    <div class="toggle-row">
+      <button id="toggleParticles" class="toggle-btn active">
+        <span class="tbtn-pip"></span>PARTICLES
+      </button>
+      <button id="toggleWakeCone" class="toggle-btn active">
+        <span class="tbtn-pip"></span>WAKE CONE
+      </button>
+      <button id="toggleAirflow" class="toggle-btn active">
+        <span class="tbtn-pip"></span>AIRFLOW
+      </button>
+    </div>
+
+    <div class="panel-scanlines"></div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
